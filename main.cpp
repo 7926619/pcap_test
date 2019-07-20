@@ -51,7 +51,7 @@ void set_packet(const u_char* p) {
             print_port(tcp_hdr->th_dport);
             p += ip_hdr->ip_hl * 4;
 
-            const u_char* data = reinterpret_cast<const u_char*>(p + sizeof(struct tcphdr));
+            const u_char* data = reinterpret_cast<const u_char*>(p + tcp_hdr->th_off * 4);
             size_t data_length = ntohs(ip_hdr->ip_len) - (tcp_hdr->doff * 4) - (ip_hdr->ip_hl * 4);
             if(data_length > 10) data_length = 10;
             if (data_length != 0) {
