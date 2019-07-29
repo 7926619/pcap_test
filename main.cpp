@@ -1,8 +1,6 @@
 #include <pcap.h>
 #include <stdio.h>
-#include <netinet/ether.h>
-#include <netinet/ip.h>
-#include <netinet/tcp.h>
+#include <libnet.h>
 #include <arpa/inet.h>
 
 void usage() {
@@ -29,30 +27,30 @@ void print_data(const u_char* data, size_t len) {
 }
 
 void set_packet(const u_char* p) {
-    const struct ether_header* ether_hdr = reinterpret_cast<const ether_header*>(p);
+    const struct libnet_ethernet_hdr* ether_hdr = reinterpret_cast<const libnet_ethernet_hdr*>(p);
     printf("Dmac: ");
     print_mac(ether_hdr->ether_dhost);
     printf("Smac: ");
     print_mac(ether_hdr->ether_shost);
 
     if(ntohs(ether_hdr->ether_type) == ETHERTYPE_IP) {
-        const struct ip* ip_hdr = reinterpret_cast<const struct ip*>(p + sizeof(struct ether_header));
+        const struct libnet_ipv4_hdr* ip_hdr = reinterpret_cast<const struct libnet_ipv4_hdr*>(p + sizeof(struct libnet_ethernet_hdr));
         printf("Sip: ");
         print_ip(ip_hdr->ip_src);
         printf("Dip: ");
         print_ip(ip_hdr->ip_dst);
-        p += sizeof(struct ether_header);
+        p += sizeof(struct libnet_ethernet_hdr);
 
         if(ip_hdr->ip_p == IPPROTO_TCP) {
-            const struct tcphdr* tcp_hdr = reinterpret_cast<const struct tcphdr*>(p + ip_hdr->ip_hl * 4);
+            const struct libnet_tcp_hdr* tcp_hdr = reinterpret_cast<const struct libnet_tcp_hdr*>(p + ip_hdr->ip_hl * 4);
             printf("Sport: ");
             print_port(tcp_hdr->th_sport);
             printf("Dport: ");
             print_port(tcp_hdr->th_dport);
             p += ip_hdr->ip_hl * 4;
 
-            const u_char* data = reinterpret_cast<const u_char*>(p + tcp_hdr->th_off * 4);
-            size_t data_length = ntohs(ip_hdr->ip_len) - (tcp_hdr->doff * 4) - (ip_hdr->ip_hl * 4);
+            const uint8_t* data = reinterpret_cast<const uint8_t*>(p + tcp_hdr->th_off * 4);
+            size_t data_length = ntohs(ip_hdr->ip_len) - (tcp_hdr->th_off * 4) - (ip_hdr->ip_hl * 4);
             if(data_length > 10) data_length = 10;
             if (data_length != 0) {
                 printf("Data: ");
